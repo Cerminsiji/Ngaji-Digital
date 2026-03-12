@@ -1,6 +1,6 @@
 /**
- * AYO NGAJI - GPS & CLEAN ENGINE
- * Al-Quran, Doa, Tahlil, Jadwal Sholat (GPS Based)
+ * NGAJI REK - BACKEND CORE
+ * Al-Quran, Doa, Tahlil, Jadwal Sholat
  */
 const SS = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -25,9 +25,11 @@ function doGet(e) {
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({error: err.message})).setMimeType(ContentService.MimeType.JSON);
   }
+  
   return HtmlService.createTemplateFromFile('index').evaluate()
-         .setTitle('Ayo Ngaji | Digital Edition')
-         .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1');
+         .setTitle('Ngaji | Digital')
+         .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1')
+         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 function flushAndSync() {
@@ -42,7 +44,7 @@ function flushAndSync() {
     log.quran = rowsQ.length;
   }
 
-  // 2. Sync Doa (MyQuran)
+  // 2. Sync Doa
   const resD = callAPI("https://api.myquran.com/v2/doa/semua");
   if (resD && resD.data) {
     const rowsD = resD.data.map(d => [d.judul, d.arab, d.indo]);
@@ -60,7 +62,7 @@ function flushAndSync() {
     log.tahlil = rowsT.length;
   }
 
-  return { status: "Database Flushed & Refreshed", detail: log };
+  return { status: "Sync Success", detail: log };
 }
 
 function getJadwalByCityId(id) {
@@ -71,8 +73,7 @@ function getJadwalByCityId(id) {
 function callAPI(url) {
   try {
     const response = UrlFetchApp.fetch(url, {muteHttpExceptions: true});
-    const content = response.getContentText();
-    return JSON.parse(content);
+    return JSON.parse(response.getContentText());
   } catch (e) { return { data: null }; }
 }
 
