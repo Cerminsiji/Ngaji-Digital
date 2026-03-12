@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #022c22; color: #ecfdf5; }
+    .font-quran { font-family: 'Amiri', serif; direction: rtl; line-height: 2.8; font-size: 2.2rem; }
+    .glass-card { background: rgba(6, 78, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(16, 185, 129, 0.1); }
+    .loader { border-top-color: #10b981; animation: spinner 0.6s linear infinite; }
+    @keyframes spinner { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="pb-28">
+
+  <header class="p-6 sticky top-0 z-50 glass-card flex justify-between items-center">
+    <div onclick="goHome()" class="cursor-pointer">
+      <h1 class="text-xl font-extrabold tracking-tighter text-emerald-400">NGAJI PRO</h1>
+      <p id="topCity" class="text-[10px] font-bold opacity-60 uppercase">Memuat...</p>
+    </div>
+    <button onclick="fullSyncServer()" class="p-2 bg-emerald-800 rounded-lg text-[10px] font-bold px-4">🔄 SYNC DATA</button>
+  </header>
+
+  <main id="appContent" class="p-4 max-w-4xl mx-auto space-y-6">
+    </main>
+
+  <nav class="fixed bottom-0 left-0 right-0 glass-card px-6 py-4 flex justify-around items-center z-50 rounded-t-[2rem]">
+    <button onclick="goHome()" class="flex flex-col items-center gap-1 opacity-50"><span class="text-xl">🏠</span><span class="text-[8px] font-bold">HOME</span></button>
+    <button onclick="loadQuran()" class="flex flex-col items-center gap-1 opacity-50"><span class="text-xl">📖</span><span class="text-[8px] font-bold">QURAN</span></button>
+    <button onclick="loadHadits()" class="flex flex-col items-center gap-1 opacity-50"><span class="text-xl">📚</span><span class="text-[8px] font-bold">HADITS</span></button>
+    <button onclick="loadDoa()" class="flex flex-col items-center gap-1 opacity-50"><span class="text-xl">📿</span><span class="text-[8px] font-bold">DOA</span></button>
+  </nav>
+
+  <script>
+    const API = "<?= ScriptApp.getService().getUrl() ?>";
+
+    function showLoading() { document.getElementById('appContent').innerHTML = '<div class="flex justify-center py-20"><div class="loader w-10 h-10 border-4 rounded-full border-emerald-500"></div></div>'; }
+
+    // --- HOME & SHOLAT ---
+    async function goHome() {
+      const cityId = localStorage.getItem('cityId') || 1301;
+      const cityName = localStorage.getItem('cityName') || "JAKARTA";
+      document.getElementById('appContent').innerHTML = `
+        <div class="p-8 rounded-[3rem] bg-gradient-to-br from-emerald-800 to-emerald-950 shadow-2xl relative overflow-hidden mb-6">
+          <div class="flex justify-between items-end relative z-10">
+            <div><p id="labelCity" class="text-[10px] font-bold opacity-60 uppercase">Jadwal: ${cityName}</p><h2 id="clock" class="text-6xl font-black tracking-tighter">--:--</h2></div>
+          </div>
+          <div id="prayerGrid" class="mt-8 grid grid-cols-5 gap-2 relative z-10"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div onclick="loadQuran()" class="glass-card p-10 rounded-[2.5rem] text-center cursor-pointer"><span class="text-3xl">📖</span><p class="mt-2 font-bold text-[10px]">QURAN</p></div>
+          <div onclick="loadHadits()" class="glass-card p-10 rounded-[2.5rem] text-center cursor-pointer"><span class="text-3xl">📚</span><p class="mt-2 font-bold text-[10px]">HADITS</p></div>
+          <div onclick="loadDoa()" class="glass-card p-10 rounded-[2.5rem] text-center cursor-pointer"><span class="text-3xl">📿</span><p class="mt-2 font-bold text-[10px]">DOA</p></div>
+          <div onclick="syncHaditsMenu()" class="glass-card p-10 rounded-[2.5rem] text-center cursor-pointer"><span class="text-3xl">📥</span><p class="mt-2 font-bold text-[10px]">SYNC HADITS</p></div>
+        </div>
+      `;
+      loadSholat(cityId, cityName);
+      startClock();
+    }
+
+    async function loadSholat(id, name) {
+      document.getElementById('topCity').innerText = name;
+      const res = await fetch(`${API}?action=getSholat&id=${id}`);
+      const d = await res.json();
+      if(d.status) {
+        const j = d.data.jadwal;
+        const keys = ['subuh','dzuhur','ashar','maghrib','isya'];
+        document.getElementById('prayerGrid').innerHTML = keys.map(k => `
+          <div class="bg-emerald-950/40 p-2 rounded-xl text-center border border-emerald-700/20">
+            <p class="text-[7px] uppercase opacity-50 font-bold">${k}</p>
+            <p class="text-[10px] font-black">${j[k]}</p>
+          </div>`).join('');
+      }
+    }
+
+    // --- QURAN ---
+    async function loadQuran() {
+      showLoading();
+      const res = await fetch(`${API}?action=getSurahList`);
+      const list = await res.json();
+      document.getElementById('appContent').innerHTML = `<div class="grid grid-cols-1 gap-2">` + list.map(s => `
+        <div onclick="openSurah(${s.ID}, '${s.Nama}')" class="glass-card p-5 rounded-[2rem] flex justify-between items-center cursor-pointer">
+          <div class="flex items-center gap-4"><span class="w-8 h-8 bg-emerald-500 text-emerald-950 flex items-center justify-center rounded-lg font-black text-[10px]">${s.ID}</span><p class="font-bold text-sm">${s.Nama}</p></div>
+          <span class="font-quran text-2xl opacity-20">${s['Nama Arab']}</span>
+        </div>`).join('') + `</div>`;
+    }
+
+    async function openSurah(id, name) {
+      showLoading();
+      const res = await fetch(`${API}?action=getAyatData&surahId=${id}`);
+      const ayats = await res.json();
+      document.getElementById('appContent').innerHTML = `
+        <div class="flex justify-between items-center mb-6 bg-emerald-900/30 p-4 rounded-2xl">
+          <button onclick="openSurah(${id-1})" class="text-xs font-bold text-emerald-400">← PREV</button>
+          <h2 class="text-lg font-black">${name}</h2>
+          <button onclick="openSurah(${id+1})" class="text-xs font-bold text-emerald-400">NEXT →</button>
+        </div>
+        <div class="space-y-4">` + ayats.map(a => `
+          <div class="glass-card p-8 rounded-[2.5rem]">
+            <div class="text-right font-quran text-emerald-50 mb-6">${a.teksArab}</div>
+            <p class="text-xs opacity-60 italic leading-relaxed pl-4 border-l-2 border-emerald-500">${a.teksIndonesia}</p>
+          </div>`).join('') + `</div>`;
+      window.scrollTo(0,0);
+    }
+
+    // --- HADITS SEARCH ---
+    async function loadHadits() {
+      document.getElementById('appContent').innerHTML = `
+        <div class="glass-card p-8 rounded-[2.5rem] space-y-6">
+          <h3 class="font-bold text-emerald-400 uppercase tracking-widest">Cari Hadits</h3>
+          <input type="text" id="hQuery" class="w-full bg-emerald-950 p-4 rounded-xl outline-none" placeholder="Kata kunci...">
+          <button onclick="doSearchHadits()" class="w-full bg-emerald-500 text-emerald-950 py-4 rounded-xl font-bold uppercase">Cari di Database</button>
+          <div id="hResults" class="space-y-4 mt-6"></div>
+        </div>
+      `;
+    }
+
+    async function doSearchHadits() {
+      const q = document.getElementById('hQuery').value;
+      document.getElementById('hResults').innerHTML = "Mencari...";
+      const res = await fetch(`${API}?action=searchHaditsLocal&q=${q}`);
+      const data = await res.json();
+      document.getElementById('hResults').innerHTML = data.map(h => `
+        <div class="p-6 bg-emerald-900/30 rounded-2xl border border-emerald-800">
+          <p class="text-[8px] font-bold text-emerald-500 mb-2 uppercase">Perawi: ${h.perawi}</p>
+          <div class="font-quran text-right mb-4 text-sm">${h.arab}</div>
+          <p class="text-xs opacity-70 leading-relaxed">${h.indo}</p>
+        </div>`).join('');
+    }
+
+    // --- DOA ---
+    async function loadDoa() {
+      showLoading();
+      const res = await fetch(`${API}?action=getDoa`);
+      const data = await res.json();
+      document.getElementById('appContent').innerHTML = `<div class="space-y-4">` + data.map(d => `
+        <div class="glass-card p-8 rounded-[2.5rem]">
+          <p class="text-[8px] font-bold text-emerald-500 uppercase mb-2">✨ Doa Harian</p>
+          <h4 class="font-bold text-sm mb-4">${d.Judul}</h4>
+          <div class="font-quran text-right text-emerald-50 mb-4">${d.Arab}</div>
+          <p class="text-xs opacity-60 leading-relaxed">${d.Terjemah}</p>
+        </div>`).join('') + `</div>`;
+    }
+
+    // --- SYNC SYSTEM ---
+    async function fullSyncServer() {
+      if(!confirm("Mulai sinkronisasi Quran, Doa, dan Perawi ke Spreadsheet?")) return;
+      showLoading();
+      const res = await fetch(`${API}?action=syncSemua`);
+      const d = await res.json();
+      alert(d.status);
+      goHome();
+    }
+
+    async function syncHaditsMenu() {
+      showLoading();
+      const res = await fetch(`${API}?action=getPerawi`);
+      const perawi = await res.json();
+      document.getElementById('appContent').innerHTML = `<div class="glass-card p-8 rounded-[2.5rem]">
+        <h3 class="font-bold mb-4">Sync Hadits (Incremental)</h3>
+        <p class="text-[10px] mb-6 opacity-60 italic">Tarik 20 hadits per klik untuk mengisi database spreadsheet.</p>
+        ${perawi.map(p => `<div class="flex justify-between p-4 bg-emerald-900/40 rounded-xl mb-2">
+          <span class="text-xs font-bold">${p.Nama}</span>
+          <button onclick="runBatchSync('${p.ID}')" class="text-[10px] bg-emerald-500 text-emerald-950 px-3 py-1 rounded-lg font-bold">BATCH SYNC</button>
+        </div>`).join('')}
+      </div>`;
+    }
+
+    async function runBatchSync(id) {
+      alert("Memulai sinkronisasi batch...");
+      const res = await fetch(`${API}?action=syncHaditsBatch&perawiId=${id}`);
+      const d = await res.json();
+      alert(`Berhasil menambah ${d.count} hadits ke database.`);
+    }
+
+    function startClock() {
+      setInterval(() => {
+        const c = document.getElementById('clock');
+        if(c) c.innerText = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+      }, 1000);
+    }
+
+    window.onload = () => { goHome(); };
+  </script>
+</body>
+</html>
