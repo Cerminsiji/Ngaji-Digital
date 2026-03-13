@@ -1,6 +1,5 @@
 /**
- * Ngaji Digital
- * Khusus Ramadhan 2026
+ * NGAJI REK - FINAL STABLE
  */
 const SS = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -8,7 +7,6 @@ function doGet(e) {
   const action = e.parameter.action;
   checkAndInitSheets();
 
-  // Route: Jika ada action, kirim JSON. Jika tidak, kirim UI.
   if (action) {
     try {
       let result;
@@ -19,11 +17,8 @@ function doGet(e) {
         case 'getTahlil': result = getSheetData("DB_Tahlil"); break;
         case 'getSholat': result = getJadwalByCityId(e.parameter.id); break;
         case 'getAyatData': result = fetchAyatFromAPI(e.parameter.surahId); break;
-        case 'searchKota': 
-          const q = e.parameter.q || "jakarta";
-          result = callAPI(`https://api.myquran.com/v2/sholat/kota/cari/${encodeURIComponent(q)}`); 
-          break;
-        default: result = {status: "error", message: "Aksi tidak ditemukan"};
+        case 'searchKota': result = callAPI(`https://api.myquran.com/v2/sholat/kota/cari/${encodeURIComponent(e.parameter.q || "jakarta")}`); break;
+        default: result = {status: "error", message: "Aksi tidak dikenal"};
       }
       return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
     } catch (err) {
@@ -32,7 +27,7 @@ function doGet(e) {
   }
   
   return HtmlService.createTemplateFromFile('index').evaluate()
-         .setTitle('Mushaf Pro 2026')
+         .setTitle('Ngaji Digital')
          .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
          .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -51,47 +46,34 @@ function getSheetData(name) {
 
 function flushAndSync() {
   try {
-    // 1. Sinkronisasi Otomatis Surah
+    // Sync Surah
     const resQ = callAPI("https://equran.id/api/v2/surat");
     if(resQ && resQ.data) {
       const rows = resQ.data.map(s => [s.nomor, s.namaLatin, s.nama, s.tempatTurun, s.jumlahAyat]);
       SS.getSheetByName("DB_Surah").clear().getRange(1,1,1,5).setValues([["ID","Nama","Nama Arab","Tipe","Jumlah Ayat"]]);
       SS.getSheetByName("DB_Surah").getRange(2,1,rows.length,5).setValues(rows);
     }
-
-    // 2. Sinkronisasi Otomatis Doa
+    // Sync Doa
     const resD = callAPI("https://api.myquran.com/v2/doa/semua");
     if(resD && resD.data) {
       const rows = resD.data.map(d => [d.judul, d.arab, d.indo]);
       SS.getSheetByName("DB_Doa").clear().getRange(1,1,1,3).setValues([["Judul","Arab","Terjemah"]]);
       SS.getSheetByName("DB_Doa").getRange(2,1,rows.length,3).setValues(rows);
     }
-
-    // 3. Sinkronisasi Otomatis Tahlil
+    // Sync Tahlil
     const resT = callAPI("https://islamic-api-zhirrr.vercel.app/api/tahlil");
     if(resT && resT.data) {
       const rows = resT.data.map(t => [t.title, t.arabic, t.translation]);
       SS.getSheetByName("DB_Tahlil").clear().getRange(1,1,1,3).setValues([["Judul","Arab","Terjemah"]]);
       SS.getSheetByName("DB_Tahlil").getRange(2,1,rows.length,3).setValues(rows);
     }
-
-    return {status: "success", message: "Sinkronisasi Berhasil! Database telah terisi."};
-  } catch (e) {
-    return {status: "error", message: "Sinkronisasi Gagal: " + e.toString()};
-  }
+    return {status: "success", message: "Sinkronisasi Berhasil!"};
+  } catch (e) { return {status: "error", message: e.toString()}; }
 }
 
 function callAPI(url) {
-  try {
-    const res = UrlFetchApp.fetch(url, { 
-      muteHttpExceptions: true,
-      headers: { "Accept": "application/json" }
-    });
-    return JSON.parse(res.getContentText());
-  } catch (e) {
-    console.error("API Error: " + url);
-    return { data: null };
-  }
+  const res = UrlFetchApp.fetch(url, {muteHttpExceptions: true, headers: {"Accept": "application/json"}});
+  return JSON.parse(res.getContentText());
 }
 
 function getJadwalByCityId(id) {
@@ -106,20 +88,9 @@ function getJadwalByCityId(id) {
   return res;
 }
 
-function fetchAyatFromAPI(id) {
-  const res = callAPI(`https://equran.id/api/v2/surat/${id}`);
-  return res ? res.data : null;
-}
+function fetchAyatFromAPI(id) { return callAPI(`https://equran.id/api/v2/surat/${id}`).data; }
 
 function checkAndInitSheets() {
-  const s = {
-    "DB_Surah":["ID","Nama","Nama Arab","Tipe","Jumlah Ayat"],
-    "DB_Doa":["Judul","Arab","Terjemah"],
-    "DB_Tahlil":["Judul","Arab","Terjemah"]
-  };
-  for (let n in s) {
-    if(!SS.getSheetByName(n)) {
-      SS.insertSheet(n).getRange(1, 1, 1, s[n].length).setValues([s[n]]);
-    }
-  }
+  const s = {"DB_Surah":["ID","Nama","Nama Arab","Tipe","Jumlah Ayat"],"DB_Doa":["Judul","Arab","Terjemah"],"DB_Tahlil":["Judul","Arab","Terjemah"]};
+  for (let n in s) { if(!SS.getSheetByName(n)) SS.insertSheet(n).getRange(1,1,1,s[n].length).setValues([s[n]]); }
 }
