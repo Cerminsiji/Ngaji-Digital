@@ -9,44 +9,44 @@
     :root { --quran-size: 2.2rem; }
     body { font-family: 'Plus Jakarta Sans', sans-serif; background: #011a14; color: #f0fdf4; margin:0; }
     .glass { background: rgba(6, 78, 59, 0.4); backdrop-filter: blur(15px); border: 1px solid rgba(16, 185, 129, 0.1); }
-    .btn-active:active { transform: scale(0.95); transition: 0.1s; }
     .font-quran { font-family: 'Amiri', serif; font-size: var(--quran-size); direction: rtl; line-height: 2.2; }
     .card-gradient { background: linear-gradient(135deg, #064e3b 0%, #022c22 100%); }
+    .btn-active:active { transform: scale(0.95); transition: 0.1s; }
   </style>
 </head>
 <body class="pb-32">
 
   <header class="p-6 sticky top-0 z-50 glass flex justify-between items-center border-b border-white/5">
     <div>
-      <h1 class="text-xl font-black text-emerald-400 leading-none">Ngaji Digital</h1>
-      <p id="cityLabel" class="text-[9px] font-bold opacity-40 uppercase tracking-widest mt-1 italic italic">Menyambungkan...</p>
+      <h1 class="text-xl font-black text-emerald-400 leading-none tracking-tighter uppercase">Ngaji Digital</h1>
+      <p id="cityLabel" class="text-[9px] font-bold opacity-40 uppercase tracking-widest mt-1 italic">Menghubungkan...</p>
     </div>
-    <button onclick="toggleModal('cityModal')" class="bg-emerald-500 text-black px-4 py-2 rounded-xl text-[9px] font-black uppercase btn-active">Ganti Kota</button>
+    <button onclick="toggleModal('cityModal')" class="bg-emerald-500 text-black px-4 py-2 rounded-xl text-[9px] font-black uppercase btn-active shadow-lg shadow-emerald-500/20">Ganti Kota</button>
   </header>
 
   <main id="appContent" class="p-5 max-w-xl mx-auto space-y-6"></main>
 
   <div id="cityModal" class="fixed inset-0 z-[60] bg-black/95 backdrop-blur-md p-8 hidden">
     <div class="flex justify-between items-center mb-8">
-      <h3 class="font-black text-emerald-400 uppercase tracking-tighter text-xl italic italic">Cari Lokasi</h3>
+      <h3 class="font-black text-emerald-400 uppercase tracking-tighter text-xl italic">Lokasi</h3>
       <button onclick="toggleModal('cityModal')" class="text-red-400 font-bold text-xs bg-red-400/10 px-4 py-2 rounded-full uppercase">Tutup</button>
     </div>
     <div class="flex gap-2 mb-6">
-      <input type="text" id="cityInput" class="flex-1 bg-emerald-900/30 p-5 rounded-2xl outline-none border border-emerald-500/20 text-white font-bold" placeholder="Ketik nama kota...">
-      <button onclick="searchCity()" class="bg-emerald-500 text-black px-8 font-black rounded-2xl btn-active uppercase text-[10px]">CARI</button>
+      <input type="text" id="cityInput" class="flex-1 bg-emerald-900/30 p-5 rounded-2xl outline-none border border-emerald-500/20 text-white font-bold" placeholder="Cari kota...">
+      <button onclick="searchCity()" class="bg-emerald-500 text-black px-8 font-black rounded-2xl btn-active uppercase text-[10px]">Cari</button>
     </div>
     <div id="cityResult" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2"></div>
   </div>
 
   <nav class="fixed bottom-0 inset-x-0 glass p-5 flex justify-around items-center z-50 rounded-t-[2.5rem] border-t border-emerald-500/10">
-    <button onclick="renderHome()" class="flex flex-col items-center gap-1"><span class="text-xl">🏠</span><span class="text-[8px] font-black uppercase tracking-tighter opacity-60">Home</span></button>
-    <button onclick="loadQuran()" class="flex flex-col items-center gap-1"><span class="text-xl">📖</span><span class="text-[8px] font-black uppercase tracking-tighter opacity-60">Quran</span></button>
-    <button onclick="loadDoa()" class="flex flex-col items-center gap-1"><span class="text-xl">📿</span><span class="text-[8px] font-black uppercase tracking-tighter opacity-60">Doa</span></button>
-    <button onclick="loadTahlil()" class="flex flex-col items-center gap-1"><span class="text-xl">🕯️</span><span class="text-[8px] font-black uppercase tracking-tighter opacity-60">Tahlil</span></button>
+    <button onclick="renderHome()" class="flex flex-col items-center gap-1"><span class="text-xl">🏠</span><span class="text-[8px] font-black uppercase opacity-60">Home</span></button>
+    <button onclick="loadQuran()" class="flex flex-col items-center gap-1"><span class="text-xl">📖</span><span class="text-[8px] font-black uppercase opacity-60">Quran</span></button>
+    <button onclick="loadDoa()" class="flex flex-col items-center gap-1"><span class="text-xl">📿</span><span class="text-[8px] font-black uppercase opacity-60">Doa</span></button>
+    <button onclick="loadTahlil()" class="flex flex-col items-center gap-1"><span class="text-xl">🕯️</span><span class="text-[8px] font-black uppercase opacity-60">Tahlil</span></button>
   </nav>
 
   <script>
-    // GANTI DENGAN URL BACKEND ANDA
+    // MASUKKAN URL BACKEND ANDA DI SINI
     const API = "URL_BACKEND_ANDA"; 
 
     function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
@@ -56,26 +56,26 @@
       const cid = localStorage.getItem('m_city_id') || "1301";
       
       document.getElementById('appContent').innerHTML = `
-        <div class="p-8 rounded-[3rem] card-gradient shadow-2xl relative overflow-hidden border border-white/5">
-          <div class="relative z-10 text-center">
+        <div class="p-8 rounded-[3rem] card-gradient shadow-2xl relative border border-white/5">
+          <div class="text-center">
             <div id="calendarHeader" class="mb-6">
-              <p id="dateMasehi" class="text-xs font-extrabold text-white uppercase italic">Memuat...</p>
+              <p id="dateMasehi" class="text-xs font-extrabold text-white uppercase italic">Memuat Tanggal...</p>
               <div class="py-2"><p id="dateHijri" class="text-2xl font-quran text-emerald-400 italic">-- -- ---- H</p></div>
             </div>
-            <h2 id="digitalClock" class="text-7xl font-black tracking-tighter mb-2 italic italic">00:00</h2>
-            <p class="text-[10px] font-black text-emerald-400 bg-emerald-400/10 inline-block px-4 py-1.5 rounded-full uppercase tracking-widest mb-8 italic italic">📍 ${city}</p>
+            <h2 id="digitalClock" class="text-7xl font-black tracking-tighter mb-2 italic">00:00</h2>
+            <p class="text-[10px] font-black text-emerald-400 bg-emerald-400/10 inline-block px-4 py-1.5 rounded-full uppercase mb-8 italic italic">📍 ${city}</p>
             <div id="sholatGrid" class="grid grid-cols-3 gap-3">
               ${['Imsak','Subuh','Dzuhur','Ashar','Maghrib','Isya'].map(s => `
                 <div class="text-center p-3 bg-black/30 rounded-2xl border border-white/5">
                   <p class="text-[8px] font-black uppercase opacity-40 mb-1">${s}</p>
-                  <p id="val-${s.toLowerCase()}" class="text-sm font-black text-emerald-50 tracking-tight">--:--</p>
+                  <p id="val-${s.toLowerCase()}" class="text-sm font-black text-emerald-50">--:--</p>
                 </div>`).join('')}
             </div>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
-          <div onclick="loadQuran()" class="glass p-8 rounded-[2.5rem] text-center btn-active cursor-pointer"><span class="text-3xl text-emerald-400">📖</span><p class="text-[9px] font-black mt-3 uppercase opacity-50 tracking-tighter">Quran</p></div>
-          <div onclick="fullSync()" id="syncBtn" class="glass p-8 rounded-[2.5rem] text-center btn-active cursor-pointer"><span class="text-3xl text-emerald-400">🔄</span><p class="text-[9px] font-black mt-3 uppercase opacity-50 tracking-tighter">Sync</p></div>
+          <div onclick="loadQuran()" class="glass p-8 rounded-[2.5rem] text-center btn-active cursor-pointer border-emerald-500/5"><span class="text-3xl">📖</span><p class="text-[9px] font-black mt-3 uppercase opacity-50">Quran</p></div>
+          <div onclick="fullSync()" id="syncBtn" class="glass p-8 rounded-[2.5rem] text-center btn-active cursor-pointer border-emerald-500/5"><span class="text-3xl">🔄</span><p class="text-[9px] font-black mt-3 uppercase opacity-50">Sync</p></div>
         </div>
       `;
       updateClock(); fetchDataHome(cid, city);
@@ -94,7 +94,10 @@
           fetch(`${API}?action=getCalendar`).then(r => r.json()),
           fetch(`${API}?action=getSholat&id=${id}`).then(r => r.json())
         ]);
-        if(resCal.status) { document.getElementById('dateMasehi').innerText = resCal.masehi; document.getElementById('dateHijri').innerText = resCal.hijri; }
+        if(resCal.status) { 
+          document.getElementById('dateMasehi').innerText = resCal.masehi; 
+          document.getElementById('dateHijri').innerText = resCal.hijri; 
+        }
         if(resSholat.status && resSholat.data.jadwal) {
           const j = resSholat.data.jadwal;
           const map = { 'val-imsak': j.imsak, 'val-subuh': j.subuh, 'val-dzuhur': j.dzuhur, 'val-ashar': j.ashar, 'val-maghrib': j.maghrib, 'val-isya': j.isya };
@@ -111,7 +114,7 @@
       const d = await res.json();
       if(d.status && d.data) {
         document.getElementById('cityResult').innerHTML = d.data.map(c => `
-          <div onclick="setCity('${c.id}', '${c.lokasi}')" class="p-5 glass rounded-2xl font-black text-sm cursor-pointer hover:bg-emerald-500 hover:text-black uppercase italic italic">📍 ${c.lokasi}</div>
+          <div onclick="setCity('${c.id}', '${c.lokasi}')" class="p-5 glass rounded-2xl font-black text-sm cursor-pointer hover:bg-emerald-500 hover:text-black uppercase italic">📍 ${c.lokasi}</div>
         `).join('');
       }
     }
@@ -127,7 +130,7 @@
 
     async function loadQuran() {
       const content = document.getElementById('appContent');
-      content.innerHTML = '<div class="py-20 text-center animate-pulse uppercase font-black text-emerald-400">Memuat Mushaf...</div>';
+      content.innerHTML = '<div class="py-20 text-center animate-pulse uppercase font-black text-emerald-400">Mushaf...</div>';
       const res = await fetch(`${API}?action=getSurah`);
       const data = await res.json();
       content.innerHTML = data.map(s => `<div onclick="openSurah(${s.ID}, '${s.Nama}')" class="glass p-5 rounded-3xl flex justify-between items-center mb-3 cursor-pointer btn-active"><div class="flex items-center gap-5"><span class="w-10 h-10 bg-emerald-500 text-black flex items-center justify-center rounded-2xl font-black text-xs">${s.ID}</span><p class="font-black text-sm uppercase">${s.Nama}</p></div><span class="font-quran text-xl text-emerald-400/30">${s["Nama Arab"]}</span></div>`).join('');
@@ -135,27 +138,27 @@
 
     async function openSurah(id, name) {
       const content = document.getElementById('appContent');
-      content.innerHTML = '<div class="py-20 text-center animate-pulse uppercase font-black">Memuat Ayat...</div>';
+      content.innerHTML = '<div class="py-20 text-center animate-pulse uppercase font-black">Memuat...</div>';
       const res = await fetch(`${API}?action=getAyatData&surahId=${id}`);
       const d = await res.json();
-      content.innerHTML = `<div class="glass p-10 rounded-[3rem] mb-6 text-center italic font-black text-emerald-400 text-2xl uppercase italic italic">${name}</div>` + d.ayat.map(a => `<div class="glass p-10 rounded-[3rem] border border-white/5 mb-6 relative"><span class="absolute top-8 left-8 text-[9px] font-black opacity-30 italic italic">${a.nomorAyat}</span><div class="font-quran text-right mb-8 text-emerald-50">${a.teksArab}</div><p class="text-[14px] opacity-60 italic italic border-l-2 border-emerald-500/40 pl-6">${a.teksIndonesia}</p></div>`).join('');
+      content.innerHTML = `<div class="glass p-10 rounded-[3rem] mb-6 text-center italic font-black text-emerald-400 text-2xl uppercase">${name}</div>` + d.ayat.map(a => `<div class="glass p-10 rounded-[3rem] border border-white/5 mb-6 relative"><span class="absolute top-8 left-8 text-[9px] font-black opacity-30 italic">${a.nomorAyat}</span><div class="font-quran text-right mb-8 text-emerald-50">${a.teksArab}</div><p class="text-[14px] opacity-60 italic border-l-2 border-emerald-500/40 pl-6">${a.teksIndonesia}</p></div>`).join('');
       window.scrollTo(0,0);
     }
 
     async function loadDoa() {
       const content = document.getElementById('appContent');
-      content.innerHTML = '<p class="text-center py-20 font-black opacity-20 uppercase italic italic">Memuat Doa...</p>';
+      content.innerHTML = '<p class="text-center py-20 font-black opacity-20 uppercase italic">Memuat Doa...</p>';
       const res = await fetch(`${API}?action=getDoa`);
       const data = await res.json();
-      content.innerHTML = data.map(d => `<div class="glass p-10 rounded-[3rem] mb-6"><h4 class="font-black text-emerald-400 uppercase text-[11px] mb-6 italic italic">${d.Judul}</h4><div class="font-quran text-right mb-6">${d.Arab}</div><p class="text-xs opacity-50 italic italic pt-6 border-t border-white/5">${d.Terjemah}</p></div>`).join('');
+      content.innerHTML = data.map(d => `<div class="glass p-10 rounded-[3rem] mb-6 border-white/5"><h4 class="font-black text-emerald-400 uppercase text-[11px] mb-6 italic border-b border-white/5 pb-4">${d.Judul}</h4><div class="font-quran text-right mb-6 text-emerald-50">${d.Arab}</div><p class="text-xs opacity-50 italic pt-6 border-t border-white/5">${d.Terjemah}</p></div>`).join('');
     }
 
     async function loadTahlil() {
       const content = document.getElementById('appContent');
-      content.innerHTML = '<p class="text-center py-20 font-black opacity-20 uppercase italic italic">Memuat Tahlil...</p>';
+      content.innerHTML = '<p class="text-center py-20 font-black opacity-20 uppercase italic">Memuat Tahlil...</p>';
       const res = await fetch(`${API}?action=getTahlil`);
       const data = await res.json();
-      content.innerHTML = data.map(t => `<div class="glass p-10 rounded-[3rem] mb-6"><h4 class="font-black text-emerald-400 uppercase text-[11px] mb-6 italic italic">${t.Judul}</h4><div class="font-quran text-right mb-6">${t.Arab}</div><p class="text-xs opacity-50 italic italic pt-6 border-t border-white/5">${t.Terjemah}</p></div>`).join('');
+      content.innerHTML = data.map(t => `<div class="glass p-10 rounded-[3rem] mb-6 border-white/5"><h4 class="font-black text-emerald-400 uppercase text-[11px] mb-6 italic">${t.Judul}</h4><div class="font-quran text-right mb-6 text-emerald-50">${t.Arab}</div><p class="text-xs opacity-50 italic pt-6 border-t border-white/5">${t.Terjemah}</p></div>`).join('');
     }
 
     window.onload = renderHome;
