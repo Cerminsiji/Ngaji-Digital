@@ -50,9 +50,7 @@ Script `Code.gs` bertindak sebagai fasilitator antara klien dan database. Kami m
 | `getCalendar` | - | Data penanggalan Hijriah & Masehi. | UNISA API (Proxy) |
 | `getSholat` | `id` | Jadwal harian berdasarkan kode kota. | MyQuran API |
 | `getSurah` | - | Daftar 114 surah di database. | DB Internal |
-| `findHadits` | `q`, `kitab` | Pencarian teks hadits (regex filter). | Multi-Sheet Hadits |
-| `findDoa` | `q` | Pencarian doa berdasarkan keyword. | DB_Doa |
-| `getTahlil` | - | Teks tahlil lengkap. | DB_Tahlil |
+| `findHadits` | `q`, `kitab` | Pencarian teks hadits (regex filter). | Multi-Sheet Hadits 
 | `sync` | - | Menarik data API external ke Sheets. | API e-Quran |
 
 ---
