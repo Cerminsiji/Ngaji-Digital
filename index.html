@@ -14,6 +14,7 @@
     .btn-active:active { transform: scale(0.92); transition: 0.1s; }
     .search-input { background: rgba(2, 44, 34, 0.6); border: 1px solid rgba(16, 185, 129, 0.2); width: 100%; padding: 0.8rem 1.2rem; border-radius: 1rem; outline: none; color: white; font-size: 0.8rem; font-weight: 600; }
     .hide-scroll::-webkit-scrollbar { display: none; }
+    select option { background: #022c22; color: #10b981; }
   </style>
 </head>
 <body class="pb-36 hide-scroll">
@@ -62,8 +63,6 @@
     function detectLocation() {
       document.getElementById('cityLabel').innerText = "📡 MENGAKSES GPS...";
       navigator.geolocation.getCurrentPosition(async (pos) => {
-        // Logika GPS: Menggunakan API eksternal untuk konversi koordinat ke Kota jika diperlukan, 
-        // namun untuk saat ini kita arahkan user ke pemilihan manual agar lebih akurat sesuai API MyQuran.
         alert("GPS Terdeteksi. Silakan pilih kota manual untuk akurasi jadwal.");
         toggleModal('cityModal');
       }, () => alert("Akses GPS ditolak. Silakan cari kota secara manual."));
@@ -143,23 +142,37 @@
       renderHome();
     }
 
-    async function loadMenu(type, query = "") {
+    async function loadMenu(type, query = "", kitab = "Semua") {
       const content = document.getElementById('appContent');
       content.innerHTML = `<div class="py-20 text-center animate-pulse font-black uppercase opacity-30 italic">Memuat ${type}...</div>`;
-      let action = query ? `find${type}&q=${query}` : `get${type}`;
+      let action = query ? `find${type}&q=${encodeURIComponent(query)}&kitab=${kitab}` : `get${type}`;
       try {
         const res = await fetch(`${API}?action=${action}`);
         const data = await res.json();
         let html = `<div class="space-y-4"><h2 class="text-2xl font-black uppercase italic text-emerald-400 italic">${type}</h2>`;
-        if(['Doa', 'Hadits'].includes(type)) {
+        
+        if(type === 'Hadits') {
+          const listKitab = ['Semua', 'Abu Daud', 'Ahmad', 'Bukhari', 'Darimi', 'Ibnu Majah', 'Malik', 'Muslim', 'Nasai', 'Tirmidzi'];
+          html += `
+            <div class="space-y-3">
+              <select id="kitabFilter" class="search-input bg-emerald-900/40 text-emerald-400 font-bold">
+                ${listKitab.map(k => `<option value="${k}" ${k === kitab ? 'selected' : ''}>${k === 'Semua' ? 'Cari di Semua Perawi' : 'Perawi: ' + k}</option>`).join('')}
+              </select>
+              <div class="flex gap-2">
+                <input type="text" id="searchInput" class="search-input flex-1" placeholder="Keyword..." value="${query}">
+                <button onclick="loadMenu('${type}', document.getElementById('searchInput').value, document.getElementById('kitabFilter').value)" class="bg-emerald-500 text-black px-4 font-black rounded-xl text-[9px] italic">CARI</button>
+              </div>
+            </div>`;
+        } else if(type === 'Doa') {
           html += `<div class="flex gap-2"><input type="text" id="searchInput" class="search-input flex-1" placeholder="Cari ${type}..." value="${query}"><button onclick="loadMenu('${type}', document.getElementById('searchInput').value)" class="bg-emerald-500 text-black px-4 font-black rounded-xl text-[9px] italic">CARI</button></div>`;
         }
+
         html += `<div class="space-y-4">`;
         const list = data.data || data;
         if (list && list.length > 0) {
           list.forEach(item => {
             const kit = item.kitab ? `<span class="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded text-[7px] ml-2 font-bold uppercase">${item.kitab}</span>` : "";
-            html += `<div class="glass p-8 rounded-[3rem] space-y-6"><h4 class="font-black text-emerald-400 uppercase text-[10px] border-b border-white/5 pb-4 tracking-widest italic italic">${item.judul || item.Judul || 'Teks'} ${kit}</h4><div class="font-quran text-right text-emerald-50 leading-loose">${item.arab || item.Arab}</div><p class="text-[11px] opacity-50 italic leading-relaxed pt-4 border-t border-white/5">${item.indo || item.Terjemah}</p></div>`;
+            html += `<div class="glass p-8 rounded-[3rem] space-y-6"><h4 class="font-black text-emerald-400 uppercase text-[10px] border-b border-white/5 pb-4 tracking-widest italic flex justify-between items-center"><span>${item.judul || item.Judul || 'Teks'}</span> ${kit}</h4><div class="font-quran text-right text-emerald-50 leading-loose">${item.arab || item.Arab}</div><p class="text-[11px] opacity-50 italic leading-relaxed pt-4 border-t border-white/5">${item.indo || item.Terjemah}</p></div>`;
           });
         } else { html += `<p class="text-center py-10 opacity-30 italic">Tidak ditemukan.</p>`; }
         content.innerHTML = html + `</div></div>`;
