@@ -1,11 +1,11 @@
 /** * Ngaji Digital Backend - Final Optimized 2026
- * Perbaikan: Kalender Hijriah, GPS Logic, & Multi-Sheet Search
+ * Perbaikan: Filter Perawi, Kalender Hijriah, & Inisialisasi Sheet
  */ 
 const SS = SpreadsheetApp.getActiveSpreadsheet(); 
 
 function doGet(e) { 
   const action = e ? e.parameter.action : null; 
-  checkAndInitSheets(); 
+  checkAndInitSheets(); // Memastikan sheet database tersedia
   
   if (action) { 
     try { 
@@ -17,7 +17,7 @@ function doGet(e) {
         case 'getDoa': result = getSheetData("DB_Doa"); break; 
         case 'getTahlil': result = getSheetData("DB_Tahlil"); break; 
         case 'getAyatData': result = fetchAyatFromAPI(e.parameter.surahId); break; 
-        case 'findHadits': result = findHaditsLokal(e.parameter.q); break;
+        case 'findHadits': result = findHaditsLokal(e.parameter.q, e.parameter.kitab); break;
         case 'findDoa': result = findInSheets(['DB_Doa'], e.parameter.q); break;
         case 'searchKota': result = callAPI(`https://api.myquran.com/v2/sholat/kota/cari/${encodeURIComponent(e.parameter.q || "jakarta")}`); break; 
         case 'sync': result = flushAndSync(); break; 
@@ -36,30 +36,24 @@ function getCalendarUNISA() {
     const now = new Date(); 
     const url = `https://service.unisayogya.ac.id/kalender/api/masehi2hijriah/muhammadiyah/${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`; 
     const res = callAPI(url); 
-    
-    // Format Masehi
     const masehiStr = Utilities.formatDate(now, "GMT+7", "EEEE, dd MMM yyyy");
-    
-    // Perbaikan Format Hijriah agar Tanggal Bulan Tahun
     let hijriStr = "19 Ramadhan 1447 H";
-    if (res && res.hijriah) {
-      // API UNISA biasanya mengembalikan "Tanggal Bulan Tahun H"
-      hijriStr = res.hijriah; 
-    }
-    
+    if (res && res.hijriah) { hijriStr = res.hijriah; }
     return { status: true, masehi: masehiStr, hijri: hijriStr }; 
   } catch (e) { 
     return { status: true, masehi: "Sabtu, 14 Maret 2026", hijri: "19 Ramadhan 1447 H" }; 
   } 
 } 
 
-function findHaditsLokal(query) {
+function findHaditsLokal(query, filterKitab) {
   if (!query || query.length < 3) return { status: false, data: [] };
-  const kitabList = ['Abu Daud', 'Ahmad', 'Bukhari', 'Darimi', 'Ibnu Majah', 'Malik', 'Muslim', 'Nasai', 'Tirmidzi'];
+  const allKitab = ['Abu Daud', 'Ahmad', 'Bukhari', 'Darimi', 'Ibnu Majah', 'Malik', 'Muslim', 'Nasai', 'Tirmidzi'];
+  let targetKitab = (filterKitab === "Semua" || !filterKitab) ? allKitab : [filterKitab];
+  
   let results = [];
   const q = query.toLowerCase();
 
-  kitabList.forEach(nama => {
+  targetKitab.forEach(nama => {
     const sheet = SS.getSheetByName(nama);
     if (sheet) {
       const data = sheet.getDataRange().getValues();
@@ -82,7 +76,7 @@ function findInSheets(sheets, query) {
     if (sheet) {
       const data = sheet.getDataRange().getValues();
       data.shift();
-      const filtered = data.filter(r => r[0].toString().toLowerCase().includes(q) || r[2].toString().toLowerCase().includes(q))
+      const filtered = data.filter(r => r[0].toString().toLowerCase().includes(q) || (r[2] && r[2].toString().toLowerCase().includes(q)))
       .map(r => ({ judul: r[0], arab: r[1], indo: r[2] }));
       results = results.concat(filtered);
     }
@@ -128,5 +122,9 @@ function fetchAyatFromAPI(id) {
 
 function checkAndInitSheets() { 
   const s = {"DB_Surah":["ID","Nama","Nama Arab","Tipe","Jumlah Ayat"],"DB_Doa":["Judul","Arab","Terjemah"],"DB_Tahlil":["Judul","Arab","Terjemah"]}; 
-  for (let n in s) { if(!SS.getSheetByName(n)) { SS.insertSheet(n).getRange(1, 1, 1, s[n].length).setValues([s[n]]); } } 
+  for (let n in s) { 
+    if(!SS.getSheetByName(n)) { 
+      SS.insertSheet(n).getRange(1, 1, 1, s[n].length).setValues([s[n]]); 
+    } 
+  } 
 }
