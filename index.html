@@ -61,12 +61,42 @@
     function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
 
     function detectLocation() {
-      document.getElementById('cityLabel').innerText = "📡 MENGAKSES GPS...";
-      navigator.geolocation.getCurrentPosition(async (pos) => {
-        alert("GPS Terdeteksi. Silakan pilih kota manual untuk akurasi jadwal.");
-        toggleModal('cityModal');
-      }, () => alert("Akses GPS ditolak. Silakan cari kota secara manual."));
-    }
+  const label = document.getElementById('cityLabel');
+  label.innerText = "📡 MENGAKSES GPS...";
+
+  if (!navigator.geolocation) {
+    alert("Browser Anda tidak mendukung fitur GPS.");
+    return;
+  }
+
+  const options = {
+    enableHighAccuracy: true,
+    timeout: 5000,
+    maximumAge: 0
+  };
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      // Jika berhasil
+      alert("Koordinat ditemukan: " + pos.coords.latitude + ", " + pos.coords.longitude + ". Silakan pilih kota terdekat.");
+      toggleModal('cityModal');
+      label.innerText = "📡 GPS AKTIF";
+    },
+    (err) => {
+      // Jika gagal, tampilkan pesan spesifik
+      let msg = "Gagal mengakses lokasi.";
+      if (err.code === 1) msg = "Izin lokasi ditolak browser. Mohon izinkan melalui pengaturan browser Anda.";
+      if (err.code === 2) msg = "Posisi tidak tersedia (Sinyal lemah).";
+      if (err.code === 3) msg = "Waktu akses GPS habis (Timeout).";
+      
+      alert(msg);
+      label.innerText = "📍 PILIH MANUAL";
+      toggleModal('cityModal');
+    },
+    options
+  );
+}
+
 
     function renderHome() {
       const city = localStorage.getItem('m_city_name') || "JAKARTA";
