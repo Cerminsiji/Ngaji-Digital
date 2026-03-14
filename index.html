@@ -9,12 +9,14 @@
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background: #01140f; color: #f0fdf4; margin:0; }
     .glass { background: rgba(6, 78, 59, 0.4); backdrop-filter: blur(15px); border: 1px solid rgba(16, 185, 129, 0.1); }
-    .font-quran { font-family: 'Amiri', serif; font-size: 1.8rem; direction: rtl; line-height: 2.5; }
+    .font-quran { font-family: 'Amiri', serif; direction: rtl; line-height: 2.5; }
     .card-gradient { background: linear-gradient(135deg, #065f46 0%, #022c22 100%); }
     .btn-active:active { transform: scale(0.92); transition: 0.1s; }
     .search-input { background: rgba(2, 44, 34, 0.6); border: 1px solid rgba(16, 185, 129, 0.2); width: 100%; padding: 0.8rem 1.2rem; border-radius: 1rem; outline: none; color: white; font-size: 0.8rem; font-weight: 600; }
     .hide-scroll::-webkit-scrollbar { display: none; }
     select option { background: #022c22; color: #10b981; }
+    /* Animasi Smooth untuk font zoom */
+    .font-quran { transition: font-size 0.2s ease-in-out; }
   </style>
 </head>
 <body class="pb-36 hide-scroll">
@@ -57,46 +59,24 @@
 
   <script>
     const API = "https://script.google.com/macros/s/AKfycbwQnpc4W4tWJGff65X0aj11yfnJ7eXQCac590phW-aH_DSLZmLW3hS_347pixqWAmJD/exec";
+    
+    // State Management for Quran
+    let currentFontSize = 1.8; // default in rem
+    const fontStep = 0.2;
+    let surahList = []; // Global surah list for navigation
 
     function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
 
     function detectLocation() {
-  const label = document.getElementById('cityLabel');
-  label.innerText = "📡 MENGAKSES GPS...";
-
-  if (!navigator.geolocation) {
-    alert("Browser Anda tidak mendukung fitur GPS.");
-    return;
-  }
-
-  const options = {
-    enableHighAccuracy: true,
-    timeout: 5000,
-    maximumAge: 0
-  };
-
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      // Jika berhasil
-      alert("Koordinat ditemukan: " + pos.coords.latitude + ", " + pos.coords.longitude + ". Silakan pilih kota terdekat.");
-      toggleModal('cityModal');
-      label.innerText = "📡 GPS AKTIF";
-    },
-    (err) => {
-      // Jika gagal, tampilkan pesan spesifik
-      let msg = "Gagal mengakses lokasi.";
-      if (err.code === 1) msg = "Izin lokasi ditolak browser. Mohon izinkan melalui pengaturan browser Anda.";
-      if (err.code === 2) msg = "Posisi tidak tersedia (Sinyal lemah).";
-      if (err.code === 3) msg = "Waktu akses GPS habis (Timeout).";
-      
-      alert(msg);
-      label.innerText = "📍 PILIH MANUAL";
-      toggleModal('cityModal');
-    },
-    options
-  );
-}
-
+      const label = document.getElementById('cityLabel');
+      label.innerText = "📡 MENGAKSES GPS...";
+      if (!navigator.geolocation) { alert("Browser Anda tidak mendukung GPS."); return; }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { alert("Lokasi ditemukan. Silakan pilih kota terdekat."); toggleModal('cityModal'); label.innerText = "📡 GPS AKTIF"; },
+        (err) => { alert("Gagal mengakses lokasi."); label.innerText = "📍 PILIH MANUAL"; toggleModal('cityModal'); },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    }
 
     function renderHome() {
       const city = localStorage.getItem('m_city_name') || "JAKARTA";
@@ -172,6 +152,92 @@
       renderHome();
     }
 
+    async function loadQuran() {
+      const content = document.getElementById('appContent');
+      content.innerHTML = '<div class="py-20 text-center animate-pulse font-black opacity-30 uppercase italic">Mushaf...</div>';
+      const res = await fetch(`${API}?action=getSurah`);
+      surahList = await res.json();
+      content.innerHTML = `<h2 class="text-2xl font-black uppercase italic text-emerald-400 mb-6 italic">Al-Qur'an</h2>` + surahList.map(s => `
+        <div onclick="openSurah(${s.ID}, '${s.Nama}')" class="glass p-5 rounded-3xl flex justify-between items-center mb-3 cursor-pointer btn-active">
+          <div class="flex items-center gap-5">
+            <span class="w-10 h-10 bg-emerald-500 text-black flex items-center justify-center rounded-2xl font-black text-[10px] italic">${s.ID}</span>
+            <div>
+               <p class="font-black text-sm uppercase italic">${s.Nama}</p>
+               <p class="text-[7px] font-bold opacity-40 uppercase tracking-widest">${s.Tempat} • ${s.Ayat} Ayat</p>
+            </div>
+          </div>
+          <span class="font-quran text-xl text-emerald-400/30 italic">${s["Nama Arab"]}</span>
+        </div>`).join('');
+    }
+
+    async function openSurah(id, name) {
+      const content = document.getElementById('appContent');
+      content.innerHTML = `<div class="py-20 text-center animate-pulse font-black opacity-30 italic">Loading Surah ${name}...</div>`;
+      
+      try {
+        const res = await fetch(`${API}?action=getAyatData&surahId=${id}`);
+        const d = await res.json();
+        
+        // Find current surah info
+        const surahInfo = surahList.find(s => s.ID == id) || { Tempat: "Makiyyah", Ayat: 0 };
+        
+        // Navigation Logic
+        const prevId = id > 1 ? id - 1 : null;
+        const nextId = id < 114 ? id + 1 : null;
+        const prevName = prevId ? surahList.find(s => s.ID == prevId).Nama : "";
+        const nextName = nextId ? surahList.find(s => s.ID == nextId).Nama : "";
+
+        let html = `
+          <div class="glass p-8 rounded-[3rem] mb-6 relative overflow-hidden">
+             <div class="relative z-10 text-center">
+                <h2 class="font-black text-emerald-400 text-3xl uppercase italic mb-1">${name}</h2>
+                <p class="text-[9px] font-black opacity-50 tracking-[0.3em] uppercase mb-4">${surahInfo.Tempat} • ${surahInfo.Ayat} AYAT</p>
+                
+                <div class="flex justify-center gap-4 border-t border-white/5 pt-4">
+                   <button onclick="changeFontSize(-1)" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center btn-active">➖</button>
+                   <span class="flex items-center text-[10px] font-black uppercase opacity-40">Ukuran Ayat</span>
+                   <button onclick="changeFontSize(1)" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center btn-active">➕</button>
+                </div>
+             </div>
+          </div>
+
+          <div id="ayatContainer">
+            ${d.ayat.map(a => `
+              <div class="glass p-10 rounded-[3rem] border border-white/5 mb-6 relative">
+                <span class="absolute top-8 left-8 text-[9px] font-black opacity-30 italic">AYAT ${a.nomorAyat}</span>
+                <div class="font-quran text-right mb-8 text-emerald-50 leading-relaxed italic" style="font-size: ${currentFontSize}rem">${a.teksArab}</div>
+                <p class="text-[13px] opacity-60 italic border-l-2 border-emerald-500/40 pl-6 leading-relaxed italic">${a.teksIndonesia}</p>
+              </div>`).join('')}
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 mt-10">
+            ${prevId ? `<button onclick="openSurah(${prevId}, '${prevName}')" class="glass p-6 rounded-3xl text-left btn-active border border-emerald-500/10">
+               <p class="text-[8px] font-black opacity-40 uppercase">Sebelumnya</p>
+               <p class="text-xs font-black text-emerald-400 uppercase italic">${prevName}</p>
+            </button>` : '<div></div>'}
+            
+            ${nextId ? `<button onclick="openSurah(${nextId}, '${nextName}')" class="glass p-6 rounded-3xl text-right btn-active border border-emerald-500/10">
+               <p class="text-[8px] font-black opacity-40 uppercase">Selanjutnya</p>
+               <p class="text-xs font-black text-emerald-400 uppercase italic">${nextName}</p>
+            </button>` : '<div></div>'}
+          </div>
+        `;
+
+        content.innerHTML = html;
+        window.scrollTo(0,0);
+      } catch (e) {
+        content.innerHTML = `<p class="text-center py-20 italic">Gagal memuat surah. Periksa koneksi atau Sync Data.</p>`;
+      }
+    }
+
+    function changeFontSize(dir) {
+      currentFontSize = Math.max(1, Math.min(4, currentFontSize + (dir * fontStep)));
+      const elements = document.querySelectorAll('.font-quran');
+      elements.forEach(el => {
+        el.style.fontSize = `${currentFontSize}rem`;
+      });
+    }
+
     async function loadMenu(type, query = "", kitab = "Semua") {
       const content = document.getElementById('appContent');
       content.innerHTML = `<div class="py-20 text-center animate-pulse font-black uppercase opacity-30 italic">Memuat ${type}...</div>`;
@@ -202,40 +268,11 @@
         if (list && list.length > 0) {
           list.forEach(item => {
             const kit = item.kitab ? `<span class="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded text-[7px] ml-2 font-bold uppercase">${item.kitab}</span>` : "";
-            html += `<div class="glass p-8 rounded-[3rem] space-y-6"><h4 class="font-black text-emerald-400 uppercase text-[10px] border-b border-white/5 pb-4 tracking-widest italic flex justify-between items-center"><span>${item.judul || item.Judul || 'Teks'}</span> ${kit}</h4><div class="font-quran text-right text-emerald-50 leading-loose">${item.arab || item.Arab}</div><p class="text-[11px] opacity-50 italic leading-relaxed pt-4 border-t border-white/5">${item.indo || item.Terjemah}</p></div>`;
+            html += `<div class="glass p-8 rounded-[3rem] space-y-6"><h4 class="font-black text-emerald-400 uppercase text-[10px] border-b border-white/5 pb-4 tracking-widest italic flex justify-between items-center"><span>${item.judul || item.Judul || 'Teks'}</span> ${kit}</h4><div class="font-quran text-right text-emerald-50 leading-loose" style="font-size: ${currentFontSize}rem">${item.arab || item.Arab}</div><p class="text-[11px] opacity-50 italic leading-relaxed pt-4 border-t border-white/5">${item.indo || item.Terjemah}</p></div>`;
           });
         } else { html += `<p class="text-center py-10 opacity-30 italic">Tidak ditemukan.</p>`; }
         content.innerHTML = html + `</div></div>`;
       } catch(e) { content.innerHTML = `<p class="text-center py-20 italic">Gagal memuat.</p>`; }
-      window.scrollTo(0,0);
-    }
-
-    async function loadQuran() {
-      const content = document.getElementById('appContent');
-      content.innerHTML = '<div class="py-20 text-center animate-pulse font-black opacity-30 uppercase italic">Mushaf...</div>';
-      const res = await fetch(`${API}?action=getSurah`);
-      const data = await res.json();
-      content.innerHTML = `<h2 class="text-2xl font-black uppercase italic text-emerald-400 mb-6 italic">Al-Qur'an</h2>` + data.map(s => `
-        <div onclick="openSurah(${s.ID}, '${s.Nama}')" class="glass p-5 rounded-3xl flex justify-between items-center mb-3 cursor-pointer btn-active">
-          <div class="flex items-center gap-5">
-            <span class="w-10 h-10 bg-emerald-500 text-black flex items-center justify-center rounded-2xl font-black text-[10px] italic">${s.ID}</span>
-            <p class="font-black text-sm uppercase italic">${s.Nama}</p>
-          </div>
-          <span class="font-quran text-xl text-emerald-400/30 italic">${s["Nama Arab"]}</span>
-        </div>`).join('');
-    }
-
-    async function openSurah(id, name) {
-      const content = document.getElementById('appContent');
-      content.innerHTML = '<div class="py-20 text-center animate-pulse font-black opacity-30 italic">Ayat...</div>';
-      const res = await fetch(`${API}?action=getAyatData&surahId=${id}`);
-      const d = await res.json();
-      content.innerHTML = `<div class="glass p-10 rounded-[3rem] mb-6 text-center italic font-black text-emerald-400 text-2xl uppercase italic">${name}</div>` + d.ayat.map(a => `
-        <div class="glass p-10 rounded-[3rem] border border-white/5 mb-6 relative">
-          <span class="absolute top-8 left-8 text-[9px] font-black opacity-30 italic">AYAT ${a.nomorAyat}</span>
-          <div class="font-quran text-right mb-8 text-emerald-50 leading-relaxed italic">${a.teksArab}</div>
-          <p class="text-[13px] opacity-60 italic border-l-2 border-emerald-500/40 pl-6 leading-relaxed italic">${a.teksIndonesia}</p>
-        </div>`).join('');
       window.scrollTo(0,0);
     }
 
