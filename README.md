@@ -4,7 +4,7 @@
 
 ## 🔗 Live Preview
 Nikmati pengalaman ibadah digital di sini:  
-👉 [https://cerminsiji.github.io/Ngaji/](https://cerminsiji.github.io/Ngaji/)
+👉 [https://cerminsiji.github.io/Ngaji-Digital/](https://cerminsiji.github.io/Ngaji-Digital/)
 
 ---
 
