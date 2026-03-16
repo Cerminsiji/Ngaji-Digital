@@ -1,0 +1,356 @@
+<!-- NGAJI DIGITAL APP -->
+
+<link href="https://fonts.googleapis.com/css2?family=Amiri&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+
+<style>
+
+#ngajiApp{
+font-family:'Plus Jakarta Sans',sans-serif;
+background:#021a14;
+color:#ecfdf5;
+padding-bottom:120px;
+}
+
+.ngaji-glass{
+background:rgba(16,185,129,0.08);
+backdrop-filter:blur(10px);
+border:1px solid rgba(16,185,129,0.25);
+border-radius:22px;
+}
+
+.ngaji-btn{
+background:#10b981;
+color:#022c22;
+font-weight:700;
+border-radius:12px;
+padding:8px 14px;
+font-size:12px;
+}
+
+.font-quran{
+font-family:'Amiri',serif;
+font-size:22px;
+direction:rtl;
+line-height:2.1;
+}
+
+.ngaji-nav{
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+background:#022c22;
+display:flex;
+justify-content:space-around;
+padding:12px;
+z-index:999;
+border-top:1px solid #065f46;
+}
+
+.ngaji-nav button{
+color:#a7f3d0;
+font-size:11px;
+font-weight:700;
+background:none;
+border:none;
+}
+
+.ngaji-nav button:hover{
+color:#10b981;
+}
+
+.ngaji-card{
+padding:20px;
+margin-bottom:14px;
+}
+
+.ngaji-title{
+color:#34d399;
+font-weight:800;
+text-transform:uppercase;
+font-size:18px;
+margin-bottom:10px;
+}
+
+</style>
+
+
+<div id="ngajiApp">
+
+<header class="ngaji-glass ngaji-card" style="display:flex;justify-content:space-between;align-items:center;">
+<div>
+<div style="font-weight:800;color:#34d399;font-size:18px;">NGAJI DIGITAL</div>
+<div id="cityLabel" style="font-size:11px;opacity:0.7;">📍 Memuat lokasi</div>
+</div>
+
+<div>
+<button class="ngaji-btn" onclick="useGPS()">GPS</button>
+</div>
+</header>
+
+
+<div id="appContent" style="padding:15px;max-width:720px;margin:auto;"></div>
+
+
+<nav class="ngaji-nav">
+
+<button onclick="renderHome()">🏠 Home</button>
+
+<button onclick="loadQuran()">📖 Quran</button>
+
+<button onclick="loadGeneric('Tahlil')">📿 Tahlil</button>
+
+<button onclick="loadDoa()">🤲 Doa</button>
+
+<button onclick="loadHadits()">📜 Hadits</button>
+
+</nav>
+
+</div>
+
+
+
+<script>
+
+const API="https://script.google.com/macros/s/AKfycbzjw9ZazE1AcFh79jDdpGfUtHJ5DPCNSIfvdLZHZFLYcKm8doXAFZJmpYP_06FkC9o8ug/exec"
+
+let monthlyData=[]
+let currentCityName=""
+
+function renderHome(){
+
+const cid=localStorage.getItem('m_city_id')||"1301"
+currentCityName=localStorage.getItem('m_city_name')||"JAKARTA"
+
+document.getElementById('cityLabel').innerText="📍 "+currentCityName
+
+const content=document.getElementById('appContent')
+
+content.innerHTML=`
+
+<div class="ngaji-glass ngaji-card" style="text-align:center">
+
+<div id="clock" style="font-size:60px;font-weight:800">--:--</div>
+
+<div id="calMasehi" style="font-size:12px;opacity:0.6">Memuat tanggal</div>
+
+<div id="calHijri" style="color:#34d399;font-weight:700;margin-bottom:10px">Hijriyah...</div>
+
+<div id="sholatGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div>
+
+</div>
+`
+
+startClock()
+
+loadHomeData(cid)
+
+}
+
+
+
+async function loadHomeData(cid){
+
+try{
+
+const cal=await fetch(`${API}?action=getCalendar`).then(r=>r.json())
+
+const sho=await fetch(`${API}?action=getSholat&id=${cid}`).then(r=>r.json())
+
+if(cal.status){
+
+document.getElementById('calMasehi').innerText=cal.masehi
+
+document.getElementById('calHijri').innerText=cal.hijri
+
+}
+
+if(sho.status){
+
+monthlyData=sho.data.jadwal
+
+const d=monthlyData[new Date().getDate()-1]
+
+document.getElementById('sholatGrid').innerHTML=
+
+['Imsak','Subuh','Dzuhur','Ashar','Maghrib','Isya'].map(t=>`
+
+<div class="ngaji-glass" style="padding:10px;text-align:center">
+
+<div style="font-size:10px;opacity:0.6">${t}</div>
+
+<div style="font-weight:700">${d[t.toLowerCase()]}</div>
+
+</div>
+
+`).join('')
+
+}
+
+}catch(e){
+
+console.log(e)
+
+}
+
+}
+
+
+
+function startClock(){
+
+const el=document.getElementById('clock')
+
+if(!el)return
+
+const n=new Date()
+
+el.innerText=
+
+n.getHours().toString().padStart(2,'0')+
+
+":"+
+
+n.getMinutes().toString().padStart(2,'0')+
+
+":"+
+
+n.getSeconds().toString().padStart(2,'0')
+
+setTimeout(startClock,1000)
+
+}
+
+
+
+async function loadQuran(){
+
+const content=document.getElementById('appContent')
+
+content.innerHTML="<div style='padding:40px;text-align:center'>Memuat Quran...</div>"
+
+const res=await fetch(`${API}?action=getSurah`)
+
+const data=await res.json()
+
+content.innerHTML="<div class='ngaji-title'>Al Quran</div>"+
+
+data.map(s=>`
+
+<div class="ngaji-glass ngaji-card" onclick="openSurah(${s.id})">
+
+${s.id}. ${s.nama}
+
+</div>
+
+`).join('')
+
+}
+
+
+
+async function loadDoa(){
+
+const content=document.getElementById('appContent')
+
+content.innerHTML="Memuat doa..."
+
+const res=await fetch(`${API}?action=getDoa`)
+
+const data=await res.json()
+
+content.innerHTML=data.map(d=>`
+
+<div class="ngaji-glass ngaji-card">
+
+<div style="font-weight:700">${d.judul||d.doa}</div>
+
+<div class="font-quran">${d.arab||d.ayat}</div>
+
+<div style="opacity:0.7">${d.indo||d.artinya}</div>
+
+</div>
+
+`).join('')
+
+}
+
+
+
+async function loadGeneric(type){
+
+const content=document.getElementById('appContent')
+
+content.innerHTML="Memuat..."
+
+const res=await fetch(`${API}?action=get${type}`)
+
+const data=await res.json()
+
+content.innerHTML=data.map(d=>`
+
+<div class="ngaji-glass ngaji-card">
+
+<div style="font-weight:700">${d.judul}</div>
+
+<div class="font-quran">${d.arab}</div>
+
+<div>${d.terjemah}</div>
+
+</div>
+
+`).join('')
+
+}
+
+
+
+async function loadHadits(){
+
+const content=document.getElementById('appContent')
+
+content.innerHTML="Pencarian hadits segera hadir..."
+
+}
+
+
+
+function useGPS(){
+
+if(!navigator.geolocation){
+
+alert("GPS tidak didukung")
+
+return
+
+}
+
+navigator.geolocation.getCurrentPosition(async(pos)=>{
+
+const lat=pos.coords.latitude
+
+const lng=pos.coords.longitude
+
+const res=await fetch(`${API}?action=searchByCoords&lat=${lat}&lng=${lng}`)
+
+const d=await res.json()
+
+if(d.status){
+
+localStorage.setItem('m_city_id',d.data.id)
+
+localStorage.setItem('m_city_name',d.data.lokasi)
+
+renderHome()
+
+}
+
+})
+
+}
+
+
+
+renderHome()
+
+</script>
