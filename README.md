@@ -12,7 +12,6 @@
 ## 🔗 Live Preview
 Nikmati pengalaman ibadah digital di sini:  
 👉 [https://cerminsiji.github.io/Ngaji-Digital/](https://cerminsiji.github.io/Ngaji-Digital/)
-[![Blogger](https://img.shields.io/badge/Blogger-Ngaji%20Digital-orange?logo=blogger&logoColor=white)](https://sukslan.blogspot.com/p/ngaji-digital.html)
 
 ---
 
@@ -22,15 +21,17 @@ Lihat tampilan lengkap aplikasi di sini 👉
 ➡️ [Lihat Screenshoot](https://github.com/Cerminsiji/Ngaji-Digital/blob/master/img/SCREENSHOTS.md)
 
 ---
----
 
 ## ✨ Fitur Unggulan v2.1.0
 
 * **⚡ Instant-Load Clock Engine**: Jam digital berjalan secara *native* di sisi klien menggunakan sistem JavaScript, memastikan waktu muncul seketika tanpa menunggu respon API.
-* **📅 Adjusted Hijri Calendar**: Integrasi API Aladhan dengan logika kompensasi `-1 hari` untuk akurasi kalender Hijriah lokal Indonesia (sesuai standar 26 Ramadhan 1447 H).
+* **📅 Adjusted Hijri Calendar**: Integrasi API Aladhan dengan merubah Logika pada Script berdasarkan Rukyat maupun Hisab, sehingga Penanggalan bisa di atur secara Flexible melalui **code.gs**.
 * **📖 On-Demand Quran Caching**: Mekanisme otomatis yang memindahkan data ayat dari API `equran.id` ke Spreadsheet hanya saat surah diakses pertama kali, mempercepat pemuatan berikutnya hingga 300%.
 * **🔍 Optimized Hadith Search**: Pencarian lintas 9 perawi besar (Bukhari, Muslim, dll) yang diproses di sisi server dengan batasan hasil (*limit*) untuk menjaga stabilitas performa.
-* **📦 Smart Bulk Importer**: Modul khusus untuk mengimpor ribuan baris data hadits secara bertahap (*batching*) guna menghindari batasan limit eksekusi Google Apps Script (6 menit).
+* **📦 Smart Bulk Importer**: Modul khusus untuk mengimpor ribuan baris data Al-Quran, Tahli, Hadits secara bertahap (*batching*) guna menghindari batasan limit eksekusi Google Apps Script (6 menit).
+  `ImportHadits.gs`
+  `ImportSurah.gs`
+  `ImportTahlil.gs`
 
 ---
 
