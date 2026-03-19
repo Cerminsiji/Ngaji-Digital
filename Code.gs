@@ -32,50 +32,59 @@ function doGet(e) {
 
 /**
  * Fungsi untuk mengambil data kalender Masehi (Native) 
- * dan Hijriah (API Aladhan dengan koreksi H-1).
+ * dan Hijriah (API Aladhan).
  */
 function getCalendarData() { 
   try { 
-    // Menggunakan Request langsung ke sistem untuk Masehi (Native Server)
     const now = new Date(); 
-    const daysIndo = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-    const monthsIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-    
+
+    const daysIndo = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+    const monthsIndo = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
     const masehiStr = `${daysIndo[now.getDay()]}, ${now.getDate()} ${monthsIndo[now.getMonth()]} ${now.getFullYear()}`;
 
-    // MENGAMBIL DATA HIJRIAH DARI API DENGAN ADJUSTMENT -1 HARI
-    // Menghitung tanggal kemarin untuk koreksi Hijriah (H-1) sesuai data Al-Habib
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1); 
+    // OFFSET BISA DIATUR DI SINI
+    const OFFSET = 0; // ← ubah ke -1 atau +1 kalau perlu penyesuaian Hilal dan Rukyat
 
-    const url = `https://api.aladhan.com/v1/gToH/${yesterday.getDate()}-${yesterday.getMonth()+1}-${yesterday.getFullYear()}`;
-    const response = UrlFetchApp.fetch(url, { "muteHttpExceptions": true });
+    const adjusted = new Date(now);
+    adjusted.setDate(now.getDate() + OFFSET);
+
+    const url = `https://api.aladhan.com/v1/gToH/${adjusted.getDate()}-${adjusted.getMonth()+1}-${adjusted.getFullYear()}`;
+    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
     const res = JSON.parse(response.getContentText());
-    
-    let hijriStr = ""; 
+
+    let hijriStr = "";
 
     if (res && res.data && res.data.hijri) {
       const h = res.data.hijri;
+
       const bulanH = {
-        "Ramadān": "RAMADHAN", "Shawwāl": "SYAWAL", "Dhū al-Qi'dah": "DZULQA'DAH",
-        "Dhū al-Ḥijjah": "DZULHIJJAH", "Muḥarram": "MUHARRAM", "Ṣafar": "SAFAR"
+        "Ramadan": "RAMADHAN",
+        "Ramadān": "RAMADHAN",
+        "Shawwal": "SYAWAL",
+        "Shawwāl": "SYAWAL",
+        "Dhu al-Qadah": "DZULQA'DAH",
+        "Dhū al-Qi'dah": "DZULQA'DAH",
+        "Dhu al-Hijjah": "DZULHIJJAH",
+        "Dhū al-Ḥijjah": "DZULHIJJAH",
+        "Muharram": "MUHARRAM",
+        "Muḥarram": "MUHARRAM",
+        "Safar": "SAFAR"
       };
-      
+
       const namaBulanH = bulanH[h.month.en] || h.month.en.toUpperCase();
       hijriStr = `${h.day} ${namaBulanH} ${h.year} H`;
+
     } else {
-      // Fallback dinamis jika API gagal akses
-      hijriStr = "26 RAMADHAN 1447 H"; 
+      hijriStr = "Tanggal Hijriyah tidak tersedia";
     }
-    
+
     return { status: true, masehi: masehiStr, hijri: hijriStr };
+
   } catch (e) { 
-    // Fallback terakhir jika terjadi error pada eksekusi skrip
-    return { status: true, masehi: "Senin, 16 Maret 2026", hijri: "26 RAMADHAN 1447 H" };
+    return { status: false, msg: e.toString() };
   } 
 }
-
-
 
 
 // Integrasi GPS dengan API MyQuran
