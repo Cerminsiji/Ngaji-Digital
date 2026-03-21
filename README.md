@@ -52,6 +52,44 @@ Antarmuka pengguna berbasis Web modern:
 * **`ImportSurah.gs`**: Mengotomatisasi pembuatan 114 sheet surah lengkap.
 * **`ImportHadits.gs`**: Menggunakan algoritma *loop-batching* (500 baris/siklus) untuk mengunduh database 9 perawi tanpa *timeout*.
 * **`ImportTahlil.gs`**: Modul injeksi konten statis untuk tahlil dan doa-doa pendek.
+  
+### 4. Additional Modules (Scrapper)
+* **`ScrapTahlilNU.gs`**
+Script ini dirancang khusus untuk mengambil data bacaan Tahlil lengkap dari situs resmi **NU Online**.
+**Masih butuh Penyesuaian untuk Judul pada Spreadsheet.**
+* **Sumber Data:** [quran.nu.or.id/tahlil](https://quran.nu.or.id/tahlil)
+* **Fitur Utama:**
+    * **Smart Title Detection:** Mengklasifikasikan judul secara otomatis (Surat, Ayat, Doa, atau Tawasul) berdasarkan konten Arab/Terjemah.
+    * **Robust Parsing:** Menangani struktur web modern (Next.js) dengan pencarian ID numerik.
+    * **Auto-Formatting:** Mengatur tata letak sheet, lebar kolom, dan perataan teks Arab (RTL) secara otomatis.
+* **Target Sheet:** `DB_TAHLIL` (id, judul, arab, latin, terjemah).
+
+* **`ScrapDOA.gs`**
+Script untuk mengambil ribuan data doa dari repository GitHub publik yang tersimpan dalam format file Python (`.py`).
+* **Sumber Data:** [miftahafina/doa-api (GitHub)](https://github.com/miftahafina/doa-api)
+  
+* **Fitur Utama:**
+    * **Ultra-Flexible Regex:** Mampu melakukan *parsing* data meskipun terdapat indentasi atau spasi lebar pada file sumber.
+    * **Python-to-Sheet:** Mengonversi struktur *Dictionary* Python langsung menjadi baris-baris Spreadsheet.
+    * **Data Cleaning:** Membersihkan karakter *escape* (`\n`, `\'`, dll) agar teks tampil bersih di sel.
+* **Target Sheet:** `DB_DOA` (Judul, Arab, Terjemah).
+
+---
+
+## 🚀 Cara Penggunaan Import dan Scrapper Modules
+
+1.  Buka Google Sheets Anda.
+2.  Masuk ke menu **Extensions** > **Apps Script**.
+3.  Buat file baru (misal: `ScrapTahlil.gs` dan `ScrapDoa.gs`) lalu tempelkan kode masing-masing.
+4.  Simpan proyek dengan menekan tombol ikon disket.
+5.  Pilih fungsi utama (contoh: `runFullScrapTahlil` atau `scrapDoaFromGithub`) pada dropdown editor.
+6.  Klik **Run** dan berikan izin akses (*Review Permissions*) saat diminta.
+7.  Data akan otomatis terisi pada sheet terkait.
+
+## 📌 Catatan Teknis
+* **Bonding:** Script ini bersifat *Container-bound*, artinya harus ditempelkan pada Apps Script yang melekat di Google Sheets.
+* **Struktur Web:** Jika struktur HTML pada sumber berubah, Regex pada script mungkin memerlukan penyesuaian minor.
+* **Lisensi:** Gunakan data yang diambil secara bijak dan tetap mencantumkan sumber asli sebagai bentuk apresiasi kepada penyedia data.
 
 ---
 
