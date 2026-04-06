@@ -18,6 +18,8 @@ function doGet(e) {
       case 'findHadits': result = findHaditsGrouped(e.parameter.q, e.parameter.kitab); break;
       case 'searchByCoords': result = callAPI(`https://api.myquran.com/v2/sholat/kota/lokasi/${e.parameter.lat}/${e.parameter.lng}`); break;
       case 'searchKota': result = callAPI(`https://api.myquran.com/v2/sholat/kota/cari/${e.parameter.q}`); break;
+      case 'getDailyInsight': result = getDailyInsight(); break;
+
       default: 
         return HtmlService.createTemplateFromFile('index').evaluate()
                .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1')
@@ -86,6 +88,19 @@ function getCalendarData() {
   } 
 }
 
+function getDailyInsight() {
+  const doas = getDoaWithSync();
+  const rawi = ['Bukhari', 'Muslim', 'Tirmidzi'];
+  const randomRawi = rawi[Math.floor(Math.random() * rawi.length)];
+  const haditsData = getSheetData(randomRawi);
+  
+  return {
+    status: true,
+    doa: doas[Math.floor(Math.random() * doas.length)],
+    hadits: haditsData.length > 0 ? haditsData[Math.floor(Math.random() * haditsData.length)] : null,
+    rawi: randomRawi
+  };
+}
 
 // Integrasi GPS dengan API MyQuran
 function getCityByCoords(lat, lng) {
@@ -97,7 +112,7 @@ function getCityByCoords(lat, lng) {
 }
 
 
-// FUNGSI PENDUKUNG LAINNYA (Sesuai Protokol Sebelumnya)
+// FUNGSI PENDUKUNG LAINNYA 
 function getAyatWithSync(surahId) {
   const sheetName = `Surah_${surahId}`;
   let sheet = SS.getSheetByName(sheetName);
@@ -181,9 +196,62 @@ function findHaditsGrouped(q, kitab) {
 function getJadwalBulan(id) {
   const cityId = id || "1301";
   const now = new Date();
-  const res = callAPI(`https://api.myquran.com/v2/sholat/jadwal/${cityId}/${now.getFullYear()}/${now.getMonth()+1}`);
-  return (res && res.data) ? { status: true, data: res.data } : { status: false };
+  const bln = now.getMonth() + 1;
+  const thn = now.getFullYear();
+  
+  const sheet = SS.getSheetByName("DB_Sholat");
+  const data = getSheetData("DB_Sholat");
+  
+  // Filter data dari Spreadsheet berdasarkan city_id, bulan, dan tahun
+  const localData = data.filter(r => r.city_id == cityId && r.bulan == bln && r.tahun == thn);
+  
+  if (localData.length > 0) {
+    return { status: true, data: { jadwal: localData } };
+  }
+
+  // Jika data tidak ada di Spreadsheet, tarik dari API
+  const res = callAPI(`https://api.myquran.com/v2/sholat/jadwal/${cityId}/${thn}/${bln}`);
+  if (res && res.data && res.data.jadwal) {
+    // Simpan ke Spreadsheet agar kedepannya tidak call API lagi
+    const rows = res.data.jadwal.map(j => [
+      cityId, bln, thn, j.tanggal, j.imsak, j.subuh, j.terbit, j.dhuha, j.dzuhur, j.ashar, j.maghrib, j.isya
+    ]);
+    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 12).setValues(rows);
+    return { status: true, data: res.data };
+  }
+  
+  return { status: false };
 }
+
+/**
+ * Fungsi untuk mencicil data jadwal sholat selama 1 tahun.
+ * Jalankan fungsi ini secara manual atau melalui trigger sekali saja.
+ */
+function syncYearlyJadwal(cityId, targetMonth) {
+  const id = cityId || "1301";
+  const year = 2026; // Sesuaikan tahun target
+  const month = targetMonth || 1;
+  
+  if (month > 12) return console.log("Sinkronisasi selesai.");
+
+  const res = callAPI(`https://api.myquran.com/v2/sholat/jadwal/${id}/${year}/${month}`);
+  
+  if (res && res.data && res.data.jadwal) {
+    const sheet = SS.getSheetByName("DB_Sholat");
+    const rows = res.data.jadwal.map(j => [
+      id, month, year, j.tanggal, j.imsak, j.subuh, j.terbit, j.dhuha, j.dzuhur, j.ashar, j.maghrib, j.isya
+    ]);
+    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 12).setValues(rows);
+    
+    console.log(`Berhasil menyimpan data bulan ${month}`);
+    
+    // Gunakan Utilities.sleep atau Trigger untuk melanjutkan ke bulan berikutnya secara bertahap
+    // Agar lebih aman dari timeout, kita panggil fungsi ini lagi dengan delay kecil
+    Utilities.sleep(2000); 
+    syncYearlyJadwal(id, month + 1);
+  }
+}
+
 
 function getSheetData(name) {
   const sheet = SS.getSheetByName(name);
@@ -201,7 +269,47 @@ function callAPI(url) {
   try { return JSON.parse(UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText()); } catch (e) { return null; }
 }
 
+function autoUpdateJadwalSholat() {
+  const now = new Date();
+  const thn = now.getFullYear();
+  const bln = now.getMonth() + 1; // Bulan berjalan
+  
+  // Ambil daftar ID Kota yang ingin di-update otomatis.
+  // Anda bisa mengisinya dengan ID kota yang paling sering digunakan (Default: 1301 untuk Jakarta)
+  const daftarKota = ["1301"]; 
+
+  const sheet = SS.getSheetByName("DB_Sholat");
+  if (!sheet) return;
+
+  daftarKota.forEach(cityId => {
+    // Cek apakah data untuk bulan ini sudah ada agar tidak double
+    const existingData = getSheetData("DB_Sholat");
+    const isExist = existingData.some(r => r.city_id == cityId && r.bulan == bln && r.tahun == thn);
+
+    if (!isExist) {
+      const res = callAPI(`https://api.myquran.com/v2/sholat/jadwal/${cityId}/${thn}/${bln}`);
+      if (res && res.data && res.data.jadwal) {
+        const rows = res.data.jadwal.map(j => [
+          cityId, bln, thn, j.tanggal, j.imsak, j.subuh, j.terbit, j.dhuha, j.dzuhur, j.ashar, j.maghrib, j.isya
+        ]);
+        sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 12).setValues(rows);
+        console.log(`Auto-Update Berhasil: Kota ${cityId} Bulan ${bln}`);
+      }
+    }
+  });
+}  
+
 function checkAndInitSheets() {
-  const sheets = ["DB_Surah", "DB_Tahlil", "DB_Doa", "Bukhari", "Muslim", "Abu Daud", "Ahmad", "Tirmidzi", "Darimi", "Nasai", "Ibnu Majah", "Malik"];
-  sheets.forEach(n => { if(!SS.getSheetByName(n)) SS.insertSheet(n).appendRow(['id','arab','indo']); });
+  const sheets = ["DB_Surah", "DB_Tahlil", "DB_Doa", "DB_Sholat", "Bukhari", "Muslim", "Abu Daud", "Ahmad", "Tirmidzi", "Darimi", "Nasai", "Ibnu Majah", "Malik"];
+  sheets.forEach(n => { 
+    if(!SS.getSheetByName(n)) {
+      const sheet = SS.insertSheet(n);
+      // Header khusus untuk DB_Sholat
+      if (n === "DB_Sholat") {
+        sheet.appendRow(['city_id', 'bulan', 'tahun', 'tanggal', 'imsak', 'subuh', 'terbit', 'dhuha', 'dzuhur', 'ashar', 'maghrib', 'isya']);
+      } else {
+        sheet.appendRow(['id','arab','indo']); 
+      }
+    }
+  });
 }
